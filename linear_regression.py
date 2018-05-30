@@ -27,17 +27,23 @@ def linear_optimizer(n, lr, epoch):
     
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        for _ in range(epoch):
+        plt.ion()
+        for i in range(epoch):
             sess.run(train, feed_dict={x_: x_train, y_: y_train})
-        weight = sess.run(w)
-        bias = sess.run(b)
+            weight = sess.run(w)
+            bias = sess.run(b)
+            # Plot best fit line on the points
+            if not i % 20:
+                plt.cla()
+                plt.plot(x_train, y_train, 'rx')
+                plt.plot(x_train, weight * x_train + bias)
+                plt.show()
+                plt.pause(0.1)
+        plt.ioff()
+        plt.show()
         print("Weight: {0:.3f}, Bias: {1:.3f}, Loss: {2:.3f}"\
               .format(float(weight), float(bias), 
                       float(sess.run(loss, feed_dict={x_: x_train, y_: y_train}))))
-        # Plot best fit line on the points
-        plt.plot(x_train, y_train, 'rx')
-        plt.plot(x_train, weight * x_train + bias)
-        plt.show()
                                                                          
                                                                          
 
@@ -63,5 +69,4 @@ if __name__ == "__main__":
     )
     params = vars(args.parse_args())
     n, lr, epoch = params['num_points'], params['lr'], params['epoch']
-    print(params)
     linear_optimizer(n, lr, epoch)
