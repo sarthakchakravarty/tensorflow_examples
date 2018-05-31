@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 
-np.random.seed(0)
+#np.random.seed(0)
 
 def create_random_data(n):
     x = np.random.random(n)
@@ -28,8 +28,7 @@ def check_cost_list(cost_list, threshold):
         return False
 
 
-def linear_optimizer(n, lr, cost_lim):
-    x_train, y_train = create_random_data(n)
+def linear_optimizer(x_data, y_data, n, lr, cost_lim):
     x_ = tf.placeholder(tf.float32)
     y_ = tf.placeholder(tf.float32)
     w = tf.Variable(tf.ones(1))
@@ -47,7 +46,7 @@ def linear_optimizer(n, lr, cost_lim):
         plt.ion()
         epoch = 0
         while True:
-            _, cost_val = sess.run([train, cost], feed_dict={x_: x_train, y_: y_train})
+            _, cost_val = sess.run([train, cost], feed_dict={x_: x_data, y_: y_data})
             weight = sess.run(w)
             bias = sess.run(b)
             cost_list = update_cost_list(cost_list, float(cost_val))
@@ -58,17 +57,25 @@ def linear_optimizer(n, lr, cost_lim):
                 else:
                     pass
                 plt.cla()
-                plt.plot(x_train, y_train, 'rx')
-                plt.plot(x_train, weight * x_train + bias)
+                plt.plot(x_data, y_data, 'rx')
+                plt.plot(x_data, weight * x_data + bias)
                 plt.show()
                 plt.pause(0.1)
             epoch += 1
         plt.ioff()
         #plt.show()
-        print("Weight: {0:.3f}, Bias: {1:.3f}, cost: {2:.3f}, Epoch: {3}"\
-              .format(float(weight), float(bias), float(cost_val), epoch))
-                                                                         
-                                                                         
+        return {"weight": float(weight), "bias": float(bias), 
+                "cost": float(cost_val), "epoch": epoch}
+
+
+def evaluate_model(x_data, y_data, weight, bias):
+    """
+    Calculating cost using calculated weights and bias.
+    """
+    y_pred = weight * x_data + bias
+    cost = np.mean(np.square(y_data - y_pred))
+    return cost
+
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
@@ -92,4 +99,12 @@ if __name__ == "__main__":
     )
     params = vars(args.parse_args())
     n, lr, cost_lim = params['num_points'], params['lr'], params['cost_limit']
-    linear_optimizer(n, lr, cost_lim)
+    x_train, y_train = create_random_data(n)
+    train_dict = linear_optimizer(x_train, y_train, n, lr, cost_lim)
+    print("Weight: {0:.3f}, Bias: {1:.3f}, cost: {2:.3f}, Epoch: {3}"\
+          .format(train_dict['weight'], train_dict['bias'], train_dict['cost'],
+                  train_dict['epoch']))
+    x_test, y_test = create_random_data(n)
+    train_cost = evaluate_model(x_test, y_test, train_dict['weight'],
+                                train_dict['bias'])
+    print("Test cost: {:.3f}".format(train_cost))
