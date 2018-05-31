@@ -12,23 +12,23 @@ def create_random_data(n):
     return x, y
     
 
-def make_latest_loss(loss_list, loss):
-    if len(loss_list) == 5:
-        _ = loss_list.pop(0)
-        loss_list.append(loss)
+def update_cost_list(cost_list, cost):
+    if len(cost_list) == 5:
+        _ = cost_list.pop(0)
+        cost_list.append(cost)
     else:
-        loss_list.append(loss)
-    return loss_list
+        cost_list.append(cost)
+    return cost_list
 
 
-def check_loss_list(loss_list, threshold):
-    if abs(np.mean(np.diff(loss_list))) < threshold:
+def check_cost_list(cost_list, threshold):
+    if abs(np.mean(np.diff(cost_list))) < threshold:
         return True
     else:
         return False
 
 
-def linear_optimizer(n, lr):
+def linear_optimizer(n, lr, cost_lim):
     x_train, y_train = create_random_data(n)
     x_ = tf.placeholder(tf.float32)
     y_ = tf.placeholder(tf.float32)
@@ -37,23 +37,23 @@ def linear_optimizer(n, lr):
     
     pred = tf.add(tf.multiply(w, x_), b)
     
-    loss = tf.reduce_mean(tf.square(y_ - pred))
+    cost = tf.reduce_mean(tf.square(y_ - pred))
     
-    train = tf.train.GradientDescentOptimizer(lr).minimize(loss)
+    train = tf.train.GradientDescentOptimizer(lr).minimize(cost)
     
     with tf.Session() as sess:
         sess.run(tf.global_variables_initializer())
-        loss_list = []
+        cost_list = []
         plt.ion()
         epoch = 0
         while True:
-            _, loss_val = sess.run([train, loss], feed_dict={x_: x_train, y_: y_train})
+            _, cost_val = sess.run([train, cost], feed_dict={x_: x_train, y_: y_train})
             weight = sess.run(w)
             bias = sess.run(b)
-            loss_list = make_latest_loss(loss_list, float(loss_val))
+            cost_list = update_cost_list(cost_list, float(cost_val))
             # Plot best fit line on the points
             if not epoch % 20:
-                if check_loss_list(loss_list, 0.00001):
+                if check_cost_list(cost_list, cost_lim):
                     break
                 else:
                     pass
@@ -65,15 +65,15 @@ def linear_optimizer(n, lr):
             epoch += 1
         plt.ioff()
         #plt.show()
-        print("Weight: {0:.3f}, Bias: {1:.3f}, Loss: {2:.3f}, Epoch: {3}"\
-              .format(float(weight), float(bias), float(loss_val), epoch))
+        print("Weight: {0:.3f}, Bias: {1:.3f}, cost: {2:.3f}, Epoch: {3}"\
+              .format(float(weight), float(bias), float(cost_val), epoch))
                                                                          
                                                                          
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument(
-        '--num_points',
+        '--num-points',
         type=int,
         default=100,
         help="Number of random data points"
@@ -84,6 +84,12 @@ if __name__ == "__main__":
         default=0.5,
         help="Learning rate"
     )
+    args.add_argument(
+        '--cost-limit',
+        type=float,
+        default=0.00001,
+        help="Threshold upto which cost function should be calculated"
+    )
     params = vars(args.parse_args())
-    n, lr = params['num_points'], params['lr']
-    linear_optimizer(n, lr)
+    n, lr, cost_lim = params['num_points'], params['lr'], params['cost_limit']
+    linear_optimizer(n, lr, cost_lim)
